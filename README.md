@@ -31,12 +31,11 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-public-key
 ```
 
-Only use the Supabase anon/public key in the frontend. Do not place the service role key in `.env.local`, Vercel frontend variables, or client-side code.
+Only use the Supabase anon/public key in the frontend.
 
 4. Create and seed the database from the Supabase SQL editor:
 
-- Run `supabase/schema.sql`
-- Run `supabase/seed.sql`
+- Run `supabase/com_dss_schema_seed.sql`
 
 5. Start the development server:
 
@@ -51,7 +50,7 @@ In Vercel, open the project settings and add these Environment Variables for Pro
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
-Redeploy after saving the variables. Never add `SUPABASE_SERVICE_ROLE_KEY` to a frontend deployment.
+Redeploy after saving the variables.
 
 ## Deploy Again
 
@@ -59,5 +58,4 @@ Push changes to the GitHub repository. Vercel will automatically build the Vite 
 
 ## Database Files
 
-- `supabase/schema.sql` creates `users`, `facilities`, `occupancy_records`, `feedback_reports`, `recommendations`, and the `admin_analytics` view.
-- `supabase/seed.sql` inserts the requested campus facilities and sample occupancy, feedback, recommendation, and chart data.
+- `supabase/com_dss_schema_seed.sql` creates `facilities`, `occupancy_records`, `feedback_reports`, and `recommendations`, then inserts the requested campus facilities and sample occupancy/recommendation data.
