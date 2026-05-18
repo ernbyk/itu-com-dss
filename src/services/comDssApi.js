@@ -135,31 +135,22 @@ export async function fetchTrendSeries() {
 }
 
 export async function fetchAdminAnalytics() {
-  const { data, error } = await requireSupabase()
-    .from('admin_analytics')
-    .select('*')
-    .order('facility_name');
-
-  if (error) throw error;
+  const data = await fetchFacilities();
 
   const congested = data.filter((item) => item.status === 'Crowded').length;
   const utilizationRate = data.length
     ? Math.round(data.reduce((sum, item) => sum + item.occupancy_rate, 0) / data.length)
     : 0;
-  const feedbackReports = data.reduce(
-    (sum, item) => sum + Number(item.feedback_count ?? 0),
-    0,
-  );
 
   return {
     cards: {
       congested,
       avgSearchTime: '4.2 min',
-      feedbackReports,
+      feedbackReports: 'Live',
       utilizationRate,
     },
     chart: {
-      labels: data.map((item) => item.facility_name),
+      labels: data.map((item) => item.name),
       values: data.map((item) => item.occupancy_rate),
       colors: data.map((item) =>
         item.status === 'Crowded'
