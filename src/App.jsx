@@ -88,32 +88,32 @@ function App() {
   const [trendSeries, setTrendSeries] = useState({ labels: [], values: [] });
   const [adminAnalytics, setAdminAnalytics] = useState(null);
 
-  useEffect(() => {
+  const loadAppData = async () => {
     if (!isSupabaseConfigured) {
       setLoading(false);
       setError('Supabase environment variables are not configured yet.');
       return;
     }
 
-    async function loadAppData() {
-      try {
-        setLoading(true);
-        const [facilityData, trendData, analyticsData] = await Promise.all([
-          fetchFacilities(),
-          fetchTrendSeries(),
-          fetchAdminAnalytics(),
-        ]);
-        setFacilities(facilityData);
-        setTrendSeries(trendData);
-        setAdminAnalytics(analyticsData);
-        setError('');
-      } catch (loadError) {
-        setError(loadError.message);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      setLoading(true);
+      const [facilityData, trendData, analyticsData] = await Promise.all([
+        fetchFacilities(),
+        fetchTrendSeries(),
+        fetchAdminAnalytics(),
+      ]);
+      setFacilities(facilityData);
+      setTrendSeries(trendData);
+      setAdminAnalytics(analyticsData);
+      setError('');
+    } catch (loadError) {
+      setError(loadError.message);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  useEffect(() => {
     loadAppData();
   }, []);
 
@@ -131,21 +131,19 @@ function App() {
       <div className="fixed bottom-6 right-6 z-50 flex space-x-2 rounded-full border border-stone-700 bg-stone-900 p-2 shadow-2xl">
         <button
           onClick={() => handleRoleChange('student')}
-          className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
-            currentRole === 'student'
+          className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${currentRole === 'student'
               ? 'bg-stone-700 text-white'
               : 'text-stone-400 hover:text-white'
-          }`}
+            }`}
         >
           STUDENT VIEW
         </button>
         <button
           onClick={() => handleRoleChange('admin')}
-          className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
-            currentRole === 'admin'
+          className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${currentRole === 'admin'
               ? 'bg-stone-700 text-white'
               : 'text-stone-400 hover:text-white'
-          }`}
+            }`}
         >
           ADMIN PORTAL
         </button>
@@ -173,11 +171,10 @@ function App() {
                   <button
                     key={item.id}
                     onClick={() => setActivePage(item.id)}
-                    className={`flex w-full items-center space-x-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
-                      activePage === item.id
+                    className={`flex w-full items-center space-x-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${activePage === item.id
                         ? 'border border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
                         : 'text-stone-400 hover:bg-stone-800'
-                    }`}
+                      }`}
                   >
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
@@ -239,6 +236,7 @@ function App() {
           facilities={facilities}
           facility={selectedFacility}
           onClose={() => setSelectedFacility(null)}
+          onRefresh={loadAppData}
         />
       )}
     </>
@@ -325,9 +323,8 @@ function CampusMap({ facilities, onSelectFacility }) {
           >
             <div className="flex flex-col items-center">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/20 shadow-2xl ${
-                  statusColor[facility.status]
-                } ${facility.status === 'Crowded' ? 'animate-pulse' : ''}`}
+                className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-white/20 shadow-2xl ${statusColor[facility.status]
+                  } ${facility.status === 'Crowded' ? 'animate-pulse' : ''}`}
               >
                 {facility.category === 'Eating' ? (
                   <Utensils className="h-4 w-4 text-white" />
@@ -369,9 +366,8 @@ function FacilityGrid({ facilities, onSelectFacility }) {
               <FacilityIcon facility={facility} />
             </div>
             <span
-              className={`rounded border px-2 py-1 text-[10px] font-bold uppercase ${
-                statusClass[facility.status]
-              }`}
+              className={`rounded border px-2 py-1 text-[10px] font-bold uppercase ${statusClass[facility.status]
+                }`}
             >
               {facility.status}
             </span>
@@ -491,7 +487,7 @@ function Metric({ label, value, tone = '' }) {
   );
 }
 
-function FacilityModal({ facilities, facility, onClose }) {
+function FacilityModal({ facilities, facility, onClose, onRefresh }) {
   const [forecast, setForecast] = useState([]);
   const [recommendation, setRecommendation] = useState(null);
   const [feedbackState, setFeedbackState] = useState('');
@@ -513,9 +509,9 @@ function FacilityModal({ facilities, facility, onClose }) {
       setRecommendation(
         fallback
           ? {
-              reason: `${facility.name} is currently crowded. Try this quieter alternative nearby:`,
-              target_facility: fallback,
-            }
+            reason: `${facility.name} is currently crowded. Try this quieter alternative nearby:`,
+            target_facility: fallback,
+          }
           : null,
       );
     });
@@ -523,8 +519,12 @@ function FacilityModal({ facilities, facility, onClose }) {
 
   const handleFeedback = async (reportType) => {
     try {
+      setFeedbackState('Sending...');
       await submitFeedback({ facilityId: facility.id, reportType });
       setFeedbackState('Thanks, report received.');
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (feedbackError) {
       setFeedbackState(feedbackError.message);
     }
@@ -547,9 +547,8 @@ function FacilityModal({ facilities, facility, onClose }) {
 
         <div className="mb-8">
           <span
-            className={`rounded border px-2 py-1 text-[10px] font-bold uppercase ${
-              statusClass[facility.status]
-            }`}
+            className={`rounded border px-2 py-1 text-[10px] font-bold uppercase ${statusClass[facility.status]
+              }`}
           >
             {facility.status}
           </span>
@@ -573,11 +572,10 @@ function FacilityModal({ facilities, facility, onClose }) {
               <button
                 key={type}
                 onClick={() => handleFeedback(type)}
-                className={`flex-1 rounded border py-2 text-[10px] transition-all ${
-                  type === 'accurate'
+                className={`flex-1 rounded border py-2 text-[10px] transition-all ${type === 'accurate'
                     ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
                     : 'border-stone-700 hover:bg-stone-800'
-                }`}
+                  }`}
               >
                 {label}
               </button>
