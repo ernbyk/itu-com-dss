@@ -1,5 +1,13 @@
 import { supabase } from '../lib/supabase';
 
+function requireSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase is not configured for this environment.');
+  }
+
+  return supabase;
+}
+
 const toFacility = (facility) => {
   const latest = facility.occupancy_records?.[0] ?? null;
   const currentCount = latest?.current_count ?? 0;
@@ -23,7 +31,7 @@ export const statusFromRate = (rate) => {
 };
 
 export async function fetchFacilities() {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('facilities')
     .select(
       `
@@ -56,7 +64,7 @@ export async function fetchFacilities() {
 }
 
 export async function fetchFacilityForecast(facilityId) {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('occupancy_records')
     .select('current_count, recorded_at')
     .eq('facility_id', facilityId)
@@ -68,7 +76,7 @@ export async function fetchFacilityForecast(facilityId) {
 }
 
 export async function fetchRecommendations(facilityId) {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('recommendations')
     .select(
       `
@@ -90,7 +98,7 @@ export async function fetchRecommendations(facilityId) {
 }
 
 export async function submitFeedback({ facilityId, reportType }) {
-  const { error } = await supabase.from('feedback_reports').insert({
+  const { error } = await requireSupabase().from('feedback_reports').insert({
     facility_id: facilityId,
     report_type: reportType,
   });
@@ -99,7 +107,7 @@ export async function submitFeedback({ facilityId, reportType }) {
 }
 
 export async function fetchTrendSeries() {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('occupancy_records')
     .select('busy_score, recorded_at, facilities!inner(name)')
     .eq('facilities.name', 'Mustafa İnan Library')
@@ -127,7 +135,7 @@ export async function fetchTrendSeries() {
 }
 
 export async function fetchAdminAnalytics() {
-  const { data, error } = await supabase
+  const { data, error } = await requireSupabase()
     .from('admin_analytics')
     .select('*')
     .order('facility_name');
